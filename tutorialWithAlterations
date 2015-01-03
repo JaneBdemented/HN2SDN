@@ -63,6 +63,8 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
 import org.opendaylight.controller.switchmanager.Subnet;
+//our decision maker
+import org.opendaylight.controller.tutorial_L2_forwarding.RuleChecker;
 
 public class TutorialL2Forwarding implements IListenDataPacket {
     private static final Logger logger = LoggerFactory
@@ -73,8 +75,8 @@ public class TutorialL2Forwarding implements IListenDataPacket {
     private Map<Long, NodeConnector> mac_to_port = new HashMap<Long, NodeConnector>();
     private String function = "switch";
     //known hash for rules_4_MAC 
-    private UserAPP userApp = new UserAPP;
-    private static Map<Long, Array> rules_4_MAC = userApp.getRuleHash()
+   
+    private static LinkList<String> RulesList = userApp.getRules();
    // private LocalTime now = new LocalTime;
     		
     void setDataPacketService(IDataPacketService s) {
@@ -219,17 +221,25 @@ public class TutorialL2Forwarding implements IListenDataPacket {
             check = null;
             check = mac_to_port.get(srcMAC_val);
             if (check != null){
-            	//search for rules on the associated mac
-            	rule = null;
-            	rule = rules_4_MAC.get(srcMAC_val);
-            	if (rule != null){
-            		//decide according to rules
-            		nextStep = ruling.configure(rule, list);
+            	RuleChecker ruling = new RulChecker();
+            	int	nextStep = ruling.Check_MAC_Rule(srcMAC_val, RulesList);
+            	if(nextStep == 0){
+                       List<Action> actions = new ArrayList<Action>();
+                       actions.add(new Drop(inPkt));
+                       Match match = new Match();
+                       match.setField( new MatchField(MatchType.IN_PORT, incoming_connector) );
+                       //match.setField( new MatchField(MatchType.DL_DST, dstMAC.clone()) );
+                       Flow f = new Flow(match, actions);
+                       // Modify the flow on the network node
+                       Status status = programmer.addFlow(incoming_node, f);
+            			return PacketResult.CONSUME;
+            		}
             	}
             }else{
             	mac_to_port.put(srcMAC_val, incoming_connector);
             }
             // Do I know the destination MAC? Lookup dstMAC in dictionary
+            
             dst_connector = mac_to_port.get(dstMAC_val);
             // If found, generate match and action for the flow, and program a
             // flow rule in switch
@@ -257,8 +267,6 @@ public class TutorialL2Forwarding implements IListenDataPacket {
                     floodPacket(inPkt);
                 }
         }
-        
         return PacketResult.CONSUME;
     }
 }
-
