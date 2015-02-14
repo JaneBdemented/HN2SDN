@@ -1,15 +1,16 @@
- package JDBC;
+
+    package JDBC;
    //import com.mysql.jdbc.PreparedStatement;
 import java.sql.*;
     //import com.mysql.*;
     //import org.gjt.mm.mysql.*;
     public class jdbcQuery {
-           
+    		private multi_Type RULES = null;
             private Connection myConnection;
             public jdbcQuery(){
                    
             }
-            public Array Connect(long mac){ 
+            public multi_Type Connect(long mac){ 
                      try {
                         // The newInstance() call is a work around for some
                         // broken Java implementations
@@ -35,18 +36,34 @@ import java.sql.*;
                     boolean advance = false;                
                     PreparedStatement update = null;
                     PreparedStatement check = null;
-                    String checkMAC = "SELECT from macRulesTable where (mac) = ?";
+                    ResultSet resp = null;
+                    int x = 0;
+                    String checkMAC = "SELECT mac FROM macRulesTable WHERE mac = ?";
                     String inputMac = "INSERT into macRulesTable (mac) Value (?)";
                     try {
 						check = myConnection.prepareStatement(checkMAC);
 						check.setLong(1, mac);
-						advance = check.execute();
-						System.out.print(advance);
+						resp = check.executeQuery();
+						/******
+						 * checking to see if mac is already in the database
+						 */
+						while(resp.next()){
+							x=resp.getInt("mac");
+						}
+						System.out.println(x);
+						if((long)x == mac){
+							advance = true;
+						}else{
+							advance = false;
+						}
+						System.out.println(advance);
 					} catch (SQLException e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
-                    
+                    /****
+                     * if MAC is not in database, install MAC. 
+                     */
                     if(!advance){
                     	try{
                     		update = myConnection.prepareStatement(inputMac);
@@ -61,44 +78,51 @@ import java.sql.*;
                                    // update.close();
                             }
                     	}
-                    }else{
-                    	PreparedStatement myStatement = null;
-                    	ResultSet myResultSet = null;
-                    	Array Rules = null;
-                    	String rule[]=null;
+                    }
+                /***
+                 * Once MAC is installed or if it is already installed
+                 * return the associated Rules.	
+                 */
+                   
+                  	PreparedStatement myStatement = null;
+                   	ResultSet myResultSet = null;
                     	//String dbTable = "macRulesTable";
-                    	String SQL = "(SELECT * FROM macRulesTable WHERE MAC = ?)";
-                    	try {
-                            myStatement = myConnection.prepareStatement(SQL);//generate statement based on established connection
-                            myStatement.setLong(1,mac);
-                            //execute bd extract query
-                            myResultSet = (myStatement.executeQuery());
-                            //myResultSet = myStatement.executeQuery("select * from ".concat(dbTable)."WHERE MAC =".concat(MAC));
-                            //process result set to obtain the list of mac addresses with their respective blocked status
-                            //while (myResultSet.next()) {
-                            Rules = myResultSet.getArray("is_nullable"); //still needs up dating for array
-                             rule =(String[]) Rules.getArray();
-                            //}
-                            //to add INSERT UPDATE  DELETE
-                           
-                    	}catch (Exception exc) {//handle exceptions here
+                   	String SQL = "(SELECT block, user_total, total_all, start_time, stop_time FROM macRulesTable WHERE mac = ?)";
+                   	try {
+                         myStatement = myConnection.prepareStatement(SQL);//generate statement based on established connection
+                         myStatement.setLong(1,mac);
+                         myResultSet = (myStatement.executeQuery());
+                         /***
+                          * Store MAC rules in multi_Type object to be returned to for 
+                          * flow decisions to be determined upon.
+                          */
+                          while (myResultSet.next()) {
+                            RULES = new multi_Type(myResultSet.getBoolean("block"),
+                            						myResultSet.getInt("user_total"),
+                            						myResultSet.getInt("total_all"), 
+                          							myResultSet.getTime("start_time"),
+                    								myResultSet.getTime("stop_time"));
+                          }
+                            
+                    	 }catch (Exception exc) {//handle exceptions here
                             exc.printStackTrace();
-                    	}
-                    	finally { //cleanup
+                    	 }finally { //cleanup
                             if (myResultSet != null) {
                                 //    myResultSet.close();
-                            } if (myStatement != null) {
+                            } 
+                            if (myStatement != null) {
                                   //  myStatement.close();
                             }
-                    	}
+                    	 }
                     	try{
                     		myConnection.close();
-                    		return(Rules);
+                    		return(RULES);
                     	}catch(SQLException e){
                     		System.out.println("Could not close connetion: "+e.getMessage());
-                    	}
-                    }
-                    return(null);
+                   	}
+                    /***
+                     * Should something go wrong with SQL return null	
+                     */
+                    return(null); 	
             }
     }
-
