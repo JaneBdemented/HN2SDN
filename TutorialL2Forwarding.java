@@ -1,5 +1,4 @@
-/*
- * Copyright (C) 2014 SDN Hub
+* Copyright (C) 2014 SDN Hub
 
  Licensed under the GNU GENERAL PUBLIC LICENSE, Version 3.
  You may not use this file except in compliance with this License.
@@ -19,6 +18,8 @@ package org.opendaylight.tutorial.tutorial_L2_forwarding.internal;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.ArrayList;
@@ -63,9 +64,13 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
 import org.opendaylight.controller.switchmanager.Subnet;
+
 import java.sql.Connection;
+
 import JDBC.*;
+
 import java.math.BigInteger;
+import java.sql.Time;
 public class TutorialL2Forwarding implements IListenDataPacket {
     private static final Logger logger = LoggerFactory
             .getLogger(TutorialL2Forwarding.class);
@@ -75,6 +80,7 @@ public class TutorialL2Forwarding implements IListenDataPacket {
     private Map<Long, NodeConnector> mac_to_port = new HashMap<Long, NodeConnector>();
     private String function = "switch";
     private jdbcQuery con = new jdbcQuery();
+    private multi_Type rules = null;
     //private Connection Database = con.Connect();
     void setDataPacketService(IDataPacketService s) {
         this.dataPacketService = s;
@@ -178,19 +184,23 @@ public class TutorialL2Forwarding implements IListenDataPacket {
             }
         }
     }
-private int calcTimeOut(){
-	logger.info("calcTimeOut");
-	return(5);
-} 
-/**************************************************
- * Checks to see if user data limit or total data limit is reached and if with in user timelimit 
- * @param srcMAC
- * @return
+/**
+ * checks to determine if the current time is within the time frame the 
+ * MAC has been granted access to the internet.    
+ * @return a value of 10 (equivalent to 10sec) or 0 meaning no access
  */
-private boolean check_MAC_rule(long srcMAC){
-	logger.info("check_MAC_rule for {}",srcMAC);
-	return(false);
-}    
+private int calcTimeOut(){
+	long timenow = System.currentTimeMillis();
+	Time time =  new Time(timenow);
+	logger.info("calcTimeOut timeNOW = "+time);
+	if ( time.before(rules.getStartTime()) && time.after(rules.getStopTime())){
+		return(10);
+	}else{
+	    return(0);
+	}
+	
+} 
+
 /******************************************************
  * Stops flow if rule is not 0
  * @param rule from check_MAC_rule true = block
@@ -207,13 +217,14 @@ private Output DesignFlow(Boolean rule, NodeConnector out){
 
     @Override
     public PacketResult receiveDataPacket(RawPacket inPkt) {
-        if (inPkt == null) {
+    	 boolean block = true;
+    	if (inPkt == null) {
             return PacketResult.IGNORED;
         }
 
         NodeConnector incoming_connector = inPkt.getIncomingNodeConnector();
         
-        int time_out;
+        int time_out = 0;
         // Hub implementation
         if (function.equals("hub")) {
             floodPacket(inPkt);
@@ -222,13 +233,13 @@ private Output DesignFlow(Boolean rule, NodeConnector out){
             if (!(formattedPak instanceof Ethernet)) {
                 return PacketResult.IGNORED;
             }
-//check for block
-         boolean block = learnSourceMAC(formattedPak, incoming_connector);
+//check for Rules
+         boolean needsFlowRules = learnSourceMAC(formattedPak, incoming_connector);
             NodeConnector outgoing_connector = 
                 knowDestinationMAC(formattedPak);
 //Check for time out value         
-           if (block){
-        	   time_out = 5;
+           if (!needsFlowRules){
+        	 block = rules.getBlock();
            }else{
         	   time_out = calcTimeOut();
            } 
@@ -249,12 +260,12 @@ private Output DesignFlow(Boolean rule, NodeConnector out){
     private boolean learnSourceMAC(Packet formattedPak, NodeConnector incoming_connector) {
         byte[] srcMAC = ((Ethernet)formattedPak).getSourceMACAddress();
         long srcMAC_val = BitBufferHelper.toNumber(srcMAC);
-        multi_Type rules = null;
+        rules = null;
         this.mac_to_port.put(srcMAC_val, incoming_connector);
         rules = con.Connect(srcMAC_val);  //connect to database
         logger.info("macRules = "+rules.getBlock()+" "+rules.getStartTime());
-      
-       return(check_MAC_rule(srcMAC_val));
+        
+       return(rules != null); //if True rules must be checked
     }
 
     private NodeConnector knowDestinationMAC(Packet formattedPak) {
@@ -276,19 +287,24 @@ private Output DesignFlow(Boolean rule, NodeConnector out){
 
         
         List<Action> actions = new ArrayList<Action>();
-        actions.add(DesignFlow(rule, outgoing_connector));
-        // actions.add(new Output(outgoing_connector));
-        
-        Flow f = new Flow(match, actions);
-        logger.info("installing Flow {}",incoming_connector);
-        f.setHardTimeout((short)timeOUT); //Time out based on rule calculation
-    
- //***********TO DROP A PACKET***************************       
- /*       	actions.add(0, null);
-        	Flow f = new Flow(match, actions);
+        Flow f = null;
+        if(rule == false || timeOUT == 0){
+        	/**
+        	 * Drops packet if rules are not satisfied 
+        	 */
+        	actions.add(0, null);
+        	f = new Flow(match, actions);
         	f.setHardTimeout((short)5);
         	logger.info("DROP!!");
-**********************************************************/       	
+        }else{
+        	/**
+        	 * Installs flow with respect to calculated rule restrictions 
+        	 */
+        	actions.add(DesignFlow(rule, outgoing_connector));
+        	f = new Flow(match, actions);
+        	logger.info("installing Flow {}",incoming_connector);
+        	f.setHardTimeout((short)timeOUT); //Time out based on rule calculation
+        }		
         // Modify the flow on the network node
         Node incoming_node = incoming_connector.getNode();
         Status status = programmer.addFlow(incoming_node, f);
