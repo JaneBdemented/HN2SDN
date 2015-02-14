@@ -65,6 +65,7 @@ import org.opendaylight.controller.switchmanager.ISwitchManager;
 import org.opendaylight.controller.switchmanager.Subnet;
 import java.sql.Connection;
 import JDBC.*;
+import java.math.BigInteger;
 public class TutorialL2Forwarding implements IListenDataPacket {
     private static final Logger logger = LoggerFactory
             .getLogger(TutorialL2Forwarding.class);
@@ -248,16 +249,10 @@ private Output DesignFlow(Boolean rule, NodeConnector out){
     private boolean learnSourceMAC(Packet formattedPak, NodeConnector incoming_connector) {
         byte[] srcMAC = ((Ethernet)formattedPak).getSourceMACAddress();
         long srcMAC_val = BitBufferHelper.toNumber(srcMAC);
+        multi_Type rules = null;
         this.mac_to_port.put(srcMAC_val, incoming_connector);
-        logger.info(" going to connect: "+srcMAC);
-        con.Connect(srcMAC_val);  //connect to database
-     // try {
-			//con.inputMACs(srcMAC_val,Database); //input mac into database
-	//	} catch (SQLException e) {
-	//		 logger.info(" MAC not installed " + e.getMessage());
-			// TODO Auto-generated catch block
-	//		e.printStackTrace();
-	//	}
+        rules = con.Connect(srcMAC_val);  //connect to database
+        logger.info("macRules = "+rules.getBlock()+" "+rules.getStartTime());
       
        return(check_MAC_rule(srcMAC_val));
     }
