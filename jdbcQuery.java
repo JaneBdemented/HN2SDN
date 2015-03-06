@@ -97,11 +97,15 @@ import java.sql.*;
                           * flow decisions to be determined upon.
                           */
                           while (myResultSet.next()) {
-                            RULES = new multi_Type(myResultSet.getBoolean("block"),
+                             RULES = new multi_Type(myResultSet.getBoolean("block"),
                             						myResultSet.getInt("user_total"),
                             						myResultSet.getInt("total_all"), 
                           							myResultSet.getTime("start_time"),
-                    								myResultSet.getTime("stop_time"));
+                    								myResultSet.getTime("stop_time"),
+                    								myResultSet.getInt("bw_limit"),
+                    								myResultSet.getInt("current_user_usage"),
+                    								myResultSet.getInt("current_total_usage"),
+                    								myResultSet.getString("terminal_name"));
                           }
                             
                     	 }catch (Exception exc) {//handle exceptions here
