@@ -4,16 +4,16 @@ import java.sql.Time;
 import java.math.BigInteger;
 public class multi_Type {
 	private boolean a1;//block
-	private int a2;//usr limit
-	private int a3;//total limit
+	private long a2;//usr limit
+	private long a3;//total limit
 	private java.sql.Time a4;//start time
-	private java.sql.Time a5;//stope time
-	private int a6; //bandwidth
-	private int a7; //current user usage
-	private int a8;//current total usage
+	private java.sql.Time a5;//stop time
+	private long a6; //bandwidth
+	private long a7; //current user usage
+	private long a8;//current total usage
 	private String a9;//terminal name
-	public multi_Type(boolean boolean1, int int1, int int2, Time time,
-			Time time2, int BW, int UsrUsage, int totUsage, String name) {
+	public multi_Type(boolean boolean1, long int1, long int2, Time time,
+			Time time2, long BW, long UsrUsage, long totUsage, String name) {
 	    a1 = boolean1;
 	    a2 =int1;
 	    a3 = int2;
@@ -28,10 +28,10 @@ public class multi_Type {
 	public boolean getBlock(){
 		return(this.a1);
 	}
-	public int getUsrUsageLimit(){
+	public long getUsrUsageLimit(){
 		return(this.a2);
 	}
-	public int getTotalUsageLimit(){
+	public long getTotalUsageLimit(){
 		return(this.a3);
 	}
 	public java.sql.Time getStartTime(){
@@ -40,13 +40,13 @@ public class multi_Type {
 	public java.sql.Time getStopTime(){
 		return(this.a5);
 	}
-	public int getBandwidth(){
+	public long getBandwidth(){
 		return(this.a6);
 	}
-	public int getUsrUsage(){
+	public long getUsrUsage(){
 		return(this.a7);
 	}
-	public int getNetworkUsage(){
+	public long getNetworkUsage(){
 		return(this.a8);
 	}
 	public String getName(){
