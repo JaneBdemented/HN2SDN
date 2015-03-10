@@ -1,3 +1,4 @@
+	
 
     package JDBC;
    //import com.mysql.jdbc.PreparedStatement;
@@ -37,7 +38,7 @@ import java.sql.*;
                     PreparedStatement update = null;
                     PreparedStatement check = null;
                     ResultSet resp = null;
-                    int x = 0;
+                    long x = 0;
                     String checkMAC = "SELECT mac FROM macRulesTable WHERE mac = ?";
                     String inputMac = "INSERT into macRulesTable (mac) Value (?)";
                     try {
@@ -48,15 +49,15 @@ import java.sql.*;
 						 * checking to see if mac is already in the database
 						 */
 						while(resp.next()){
-							x=resp.getInt("mac");
+							x=resp.getLong("mac");
 						}
-						System.out.println(x);
-						if((long)x == mac){
+						//System.out.println(x);
+						if(x == mac){
 							advance = true;
 						}else{
 							advance = false;
 						}
-						System.out.println(advance);
+						//System.out.println(advance);
 					} catch (SQLException e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
@@ -87,7 +88,7 @@ import java.sql.*;
                   	PreparedStatement myStatement = null;
                    	ResultSet myResultSet = null;
                     	//String dbTable = "macRulesTable";
-                   	String SQL = "(SELECT block, user_total, total_all, start_time, stop_time FROM macRulesTable WHERE mac = ?)";
+                   	String SQL = "(SELECT block, user_total, total_all, start_time, stop_time, bw_limit, current_user_usage, current_total_usage, terminal_name FROM macRulesTable WHERE mac = ?)";
                    	try {
                          myStatement = myConnection.prepareStatement(SQL);//generate statement based on established connection
                          myStatement.setLong(1,mac);
@@ -97,14 +98,14 @@ import java.sql.*;
                           * flow decisions to be determined upon.
                           */
                           while (myResultSet.next()) {
-                             RULES = new multi_Type(myResultSet.getBoolean("block"),
-                            						myResultSet.getInt("user_total"),
-                            						myResultSet.getInt("total_all"), 
+                            RULES = new multi_Type(myResultSet.getBoolean("block"),
+                            						myResultSet.getLong("user_total"),
+                            						myResultSet.getLong("total_all"), 
                           							myResultSet.getTime("start_time"),
                     								myResultSet.getTime("stop_time"),
-                    								myResultSet.getInt("bw_limit"),
-                    								myResultSet.getInt("current_user_usage"),
-                    								myResultSet.getInt("current_total_usage"),
+                    								myResultSet.getLong("bw_limit"),
+                    								myResultSet.getLong("current_user_usage"),
+                    								myResultSet.getLong("current_total_usage"),
                     								myResultSet.getString("terminal_name"));
                           }
                             
@@ -130,3 +131,4 @@ import java.sql.*;
                     return(null); 	
             }
     }
+
