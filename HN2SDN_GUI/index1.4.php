@@ -94,7 +94,7 @@ if(true) {
             }else if(endt_ampm=='AM'&&st_ampm=='PM'){
             	alert('Start and Stop times are limited to the same day');
             	return;
-            }else if (st_ampm==endt_ampm&&beg[0]>end[0]){
+            }else if (st_ampm==endt_ampm&&beg[0]<end[0]){
             	alert('End time must be after Start time');
             	return;
             }else if (st=='No Limit'&&endt!='No Limit'||endt=='No Limit'&&st!='No Limit'){
