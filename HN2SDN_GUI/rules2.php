@@ -56,7 +56,7 @@
                                          echo'<td><select type = select name = "st"><option>Blocked (Start Time = End Time)</option>'; 
                                          $i = 12;
                                         while($i>0):
-                                            echo'<option>'.$i.':00:00</option><option>'.$i.':30:00</option>'; 
+                                            echo'<option>'.$i.':30:00</option><option>'.$i.':00:00</option>'; 
                                             $i--;
                                         endwhile;
                                         echo'</select></td><td><select type = select name = "st_ampm"><option>AM</option><option>PM</option></select></td></tr>';    
@@ -75,7 +75,7 @@
                                         $i = 12;
                                         while($i>0):
                                             if($i!=$hour[0]){
-                                                echo'<option>'.$i.':00:00</option><option>'.$i.':30:00</option>'; 
+                                                echo'<option>'.$i.':30:00</option><option>'.$i.':00:00</option>'; 
                                                 $i--;
                                             }
                                         endwhile;
